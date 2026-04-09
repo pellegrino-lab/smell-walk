@@ -280,14 +280,38 @@
           <div id="results-count" style="font-size:13px; color:#666;"></div>
         </div>
       </div>
+      <div class="mt-3">
+        <label class="form-label fw-bold" for="threshold-slider" style="font-size:13px;">
+          Spider plot threshold — avg rating &ge; <span id="threshold-val">0.5</span>
+        </label>
+        <input type="range" id="threshold-slider" min="0.5" max="3.0" step="0.1" value="0.5"
+               style="max-width:360px;"
+               oninput="document.getElementById('threshold-val').textContent = parseFloat(this.value).toFixed(1);" />
+        <div style="display:flex; justify-content:space-between; max-width:360px; font-size:11px; color:#888; margin-top:2px;">
+          <span>0.5</span><span>3.0</span>
+        </div>
+      </div>
       <div id="results-msg" style="margin-top:8px; font-size:13px; color:#c33;"></div>
     </div>
 
-    <div class="s-card">
-      <span class="step-lbl">Top Descriptors — Mean Rating (all respondents)</span>
-      <div id="results-chart-wrap">
-        <div class="no-data-msg" id="no-data-msg">Select a species and click Load Results.</div>
-        <canvas id="results-chart" style="display:none;"></canvas>
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <div class="s-card" style="height:100%;">
+          <span class="step-lbl">Top Descriptors — Mean Rating</span>
+          <div id="results-chart-wrap">
+            <div class="no-data-msg" id="no-data-msg">Select a species and click Load Results.</div>
+            <canvas id="results-chart" style="display:none;"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="s-card" style="height:100%;">
+          <span class="step-lbl">Odor Profile (Spider Plot)</span>
+          <div id="spider-chart-wrap">
+            <div class="no-data-msg" id="no-spider-msg">Select a species and click Load Results.</div>
+            <canvas id="spider-chart" style="display:none;"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -395,6 +419,7 @@
   // ============================================================
   var selectedOdors = {};   // col -> true
   var resultsChart  = null;
+  var spiderChart   = null;
 
   // ============================================================
   // Init
@@ -710,7 +735,10 @@
         var values = sorted.map(function (col) { return parseFloat(means[col].toFixed(2)); });
         var colors = sorted.map(function (col) { return PRIMARY_COLORS[TERM_LOOKUP[col].primary]; });
 
+        var threshold = parseFloat(document.getElementById("threshold-slider").value) || 0.5;
+
         renderChart(labels, values, colors, species);
+        renderSpiderChart(sorted, means, species, threshold);
         renderTop5Table(sorted.slice(0, 5), means);
       })
       .catch(function (err) {
@@ -724,8 +752,12 @@
     document.getElementById("no-data-msg").textContent = msg;
     document.getElementById("no-data-msg").style.display = "";
     document.getElementById("results-chart").style.display = "none";
+    document.getElementById("no-spider-msg").textContent = msg;
+    document.getElementById("no-spider-msg").style.display = "";
+    document.getElementById("spider-chart").style.display = "none";
     document.getElementById("top5-card").style.display = "none";
     if (resultsChart) { resultsChart.destroy(); resultsChart = null; }
+    if (spiderChart)  { spiderChart.destroy();  spiderChart  = null; }
   }
 
   function renderChart(labels, values, colors, title) {
@@ -793,6 +825,91 @@
       tbody.appendChild(tr);
     });
     card.style.display = "";
+  }
+
+  // ============================================================
+  // Spider (radar) chart
+  // ============================================================
+  function renderSpiderChart(allSorted, means, species, threshold) {
+    var noMsg  = document.getElementById("no-spider-msg");
+    var canvas = document.getElementById("spider-chart");
+
+    // Apply threshold filter — need at least 3 descriptors
+    var aboveThreshold = allSorted.filter(function (col) {
+      return means[col] >= threshold;
+    });
+
+    if (aboveThreshold.length < 3) {
+      noMsg.textContent   = "Fewer than 3 descriptors above threshold (" + threshold.toFixed(1) + "). Try lowering it.";
+      noMsg.style.display = "";
+      canvas.style.display = "none";
+      if (spiderChart) { spiderChart.destroy(); spiderChart = null; }
+      return;
+    }
+
+    noMsg.style.display  = "none";
+    canvas.style.display = "";
+
+    var labels = aboveThreshold.map(function (col) { return TERM_LOOKUP[col].label; });
+    var values = aboveThreshold.map(function (col) { return parseFloat(means[col].toFixed(2)); });
+
+    if (spiderChart) { spiderChart.destroy(); }
+
+    spiderChart = new Chart(canvas.getContext("2d"), {
+      type: "radar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: species,
+          data: values,
+          backgroundColor: "rgba(46, 125, 50, 0.18)",
+          borderColor: "#2E7D32",
+          borderWidth: 2.5,
+          pointBackgroundColor: "#2E7D32",
+          pointBorderColor: "#fff",
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: species + " \u2014 Spider Plot",
+            font: { size: 13, weight: "bold" },
+            color: "#1a1a1a"
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return " " + ctx.parsed.r.toFixed(2) + " / 5";
+              }
+            }
+          }
+        },
+        scales: {
+          r: {
+            beginAtZero: true,
+            min: 0,
+            max: 5,
+            ticks: {
+              stepSize: 1,
+              font: { size: 10 },
+              color: "#aaa",
+              backdropColor: "transparent"
+            },
+            grid:        { color: "rgba(0,0,0,0.1)" },
+            angleLines:  { color: "rgba(0,0,0,0.1)" },
+            pointLabels: {
+              font: { size: 11 },
+              color: "#333"
+            }
+          }
+        }
+      }
+    });
   }
 
   // ============================================================
