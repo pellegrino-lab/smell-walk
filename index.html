@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Odors in the Wild</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    body { font-family: 'Lato', sans-serif; background: #F7FAF5; color: #1a1a1a; }
+
+    /* ── Header ── */
+    .app-header {
+      background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 60%, #388E3C 100%);
+      color: white; padding: 18px 24px 14px;
+    }
+    .app-header h1 { margin:0; font-weight:900; font-size:1.8em; letter-spacing:-0.5px; }
+    .app-header p  { margin:3px 0 0; opacity:0.85; font-size:0.95em; }
+
+    /* ── Tab nav ── */
+    .tab-bar {
+      background: white;
+      border-bottom: 2px solid #e0e0e0;
+      padding: 0 20px;
+    }
+    .tab-bar .nav-link {
+      color: #555; font-weight: 700; padding: 12px 20px;
+      border: none; border-bottom: 3px solid transparent; border-radius: 0;
+    }
+    .tab-bar .nav-link.active {
+      color: #2E7D32; border-bottom-color: #2E7D32;
+    }
+    .tab-bar .nav-link:hover:not(.active) { color: #2E7D32; background: #f0f7f0; }
+
+    /* ── Cards ── */
+    .s-card {
+      background: white; border-radius: 12px;
+      padding: 18px 20px; margin-bottom: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+
+    /* ── Step labels ── */
+    .step-lbl {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: #888; margin-bottom: 8px; display: block;
+    }
+
+    /* ── Odor category grid ── */
+    .odor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 768px) { .odor-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .odor-cat {
+      background: white; border-radius: 8px;
+      padding: 10px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border-top: 4px solid #ccc;
+    }
+    .odor-cat-title {
+      font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      margin-bottom: 6px; padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .odor-cat label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; line-height: 1.9;
+      cursor: pointer; user-select: none; margin: 0;
+    }
+    .odor-cat input[type="checkbox"] {
+      width: 16px; height: 16px; flex-shrink: 0;
+      cursor: pointer; accent-color: #2E7D32;
+    }
+
+    /* ── Selected badges ── */
+    .sel-badge {
+      display: inline-block; padding: 4px 12px; margin: 3px;
+      border-radius: 20px; font-size: 12px; font-weight: 700;
+      background: #FFD700; color: #333; border: 2px solid #DAA520;
+    }
+
+    /* ── Rating cards ── */
+    .rate-card {
+      background: #FAFAFA; border-radius: 10px;
+      padding: 12px 16px; margin: 7px 0;
+      border-left: 5px solid #ccc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .rate-card .descriptor-name { font-weight: 700; font-size: 15px; }
+    .rate-card .category-name   { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── Sliders ── */
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 6px; border-radius: 3px;
+      background: #ddd; outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 28px; height: 28px;
+      border-radius: 50%; background: #2E7D32;
+      cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #2E7D32; cursor: pointer; border: none;
+    }
+    .range-ticks {
+      display: flex; justify-content: space-between;
+      padding: 0 4px; margin-bottom: 2px;
+    }
+    .range-ticks span { font-size: 11px; color: #aaa; }
+    .range-labels {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: #888; margin-top: 2px;
+    }
+
+    /* ── GPS ── */
+    .gps-note { font-size: 11px; color: #888; margin-top: 4px; }
+
+    /* ── Submit ── */
+    #submit-btn {
+      min-width: 200px; font-size: 1.05em;
+      padding: 12px 28px; border-radius: 30px;
+      font-weight: 700;
+    }
+    #submit-btn:disabled { opacity: 0.6; }
+
+    /* ── Toast ── */
+    #toast-wrap {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%); z-index: 9999;
+      min-width: 280px; text-align: center;
+      pointer-events: none;
+    }
+    .toast-msg {
+      display: inline-block; padding: 12px 24px;
+      border-radius: 30px; font-size: 14px; font-weight: 700;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.3s ease;
+    }
+    .toast-ok      { background: #2E7D32; color: white; }
+    .toast-warning { background: #E65100; color: white; }
+    .toast-error   { background: #b71c1c; color: white; }
+    @keyframes fadeInUp {
+      from { opacity:0; transform: translateY(12px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ── Results ── */
+    #results-chart-wrap { position: relative; min-height: 300px; }
+    .no-data-msg { text-align: center; color: #aaa; font-style: italic; padding: 40px 0; }
+
+    @media (max-width: 576px) {
+      .app-header { padding: 14px 16px 10px; }
+      .app-header h1 { font-size: 1.4em; }
+      .s-card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── App Header ── -->
+  <div class="app-header">
+    <h1>&#127807; Odors in the Wild</h1>
+    <p>Rate-All-That-Apply Field Odor Documentation</p>
+  </div>
+
+  <!-- ── Tab Navigation ── -->
+  <div class="tab-bar">
+    <ul class="nav" id="main-tabs">
+      <li class="nav-item">
+        <button class="nav-link active" onclick="showTab('rate')">
+          <i class="fa-solid fa-wind"></i> Rate
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" onclick="showTab('results')">
+          <i class="fa-solid fa-chart-bar"></i> Results
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       RATE TAB
+  ════════════════════════════════════════════ -->
+  <div id="tab-rate" class="container-fluid" style="max-width:960px; padding:20px 16px;">
+
+    <!-- Step 1 -->
+    <div class="s-card">
+      <span class="step-lbl">Step 1 — Who are you?</span>
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label fw-bold" for="subject">Your Initials</label>
+          <input type="text" id="subject" class="form-control"
+                 placeholder="e.g. JP" maxlength="8" autocomplete="off" />
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-bold" for="species-select">What are you smelling?</label>
+          <select id="species-select" class="form-select"></select>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <span class="step-lbl">Location (optional)</span>
+        <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+          <button class="btn btn-outline-success btn-sm" style="border-radius:20px; padding:5px 16px;"
+                  onclick="captureGPS()">
+            <i class="fa-solid fa-location-dot"></i> Capture GPS
+          </button>
+          <span id="gps-status" style="font-size:13px; color:#888; font-style:italic;">Not captured yet</span>
+        </div>
+        <!-- Manual fallback -->
+        <div class="row g-2" style="max-width:420px;">
+          <div class="col-6">
+            <input type="number" id="manual-lat" class="form-control form-control-sm"
+                   placeholder="Latitude" step="0.000001" />
+          </div>
+          <div class="col-6">
+            <input type="number" id="manual-lon" class="form-control form-control-sm"
+                   placeholder="Longitude" step="0.000001" />
+          </div>
+        </div>
+        <div class="gps-note">GPS requires HTTPS. If the button doesn't work, enter coordinates manually.</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="s-card">
+      <span class="step-lbl">Step 2 — Select every odor you detect</span>
+      <p style="color:#666; font-size:13px; margin-bottom:12px;">
+        Check all descriptors that match what you smell.
+      </p>
+      <div class="odor-grid" id="odor-grid">
+        <!-- filled by JS -->
+      </div>
+      <div class="d-flex align-items-center flex-wrap gap-2 mt-3">
+        <span class="step-lbl" style="margin:0;">Selected:</span>
+        <div id="selected-badges">
+          <span style="color:#bbb; font-style:italic; font-size:13px;">none yet</span>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" style="border-radius:20px;"
+                onclick="clearAll()">
+          <i class="fa-solid fa-xmark"></i> Clear All
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3 (dynamic) -->
+    <div id="rating-section"></div>
+
+    <!-- Step 4 (dynamic) -->
+    <div id="submit-section"></div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       RESULTS TAB
+  ════════════════════════════════════════════ -->
+  <div id="tab-results" class="container-fluid" style="max-width:960px; padding:20px 16px; display:none;">
+
+    <div class="s-card">
+      <div class="row g-3 align-items-end">
+        <div class="col-7 col-md-5">
+          <label class="form-label fw-bold" for="results-species">Species</label>
+          <select id="results-species" class="form-select"></select>
+        </div>
+        <div class="col-5 col-md-3">
+          <button class="btn btn-success w-100" onclick="loadResults()" id="load-btn">
+            <i class="fa-solid fa-rotate"></i> Load Results
+          </button>
+        </div>
+        <div class="col-12 col-md-4">
+          <div id="results-count" style="font-size:13px; color:#666;"></div>
+        </div>
+      </div>
+      <div id="results-msg" style="margin-top:8px; font-size:13px; color:#c33;"></div>
+    </div>
+
+    <div class="s-card">
+      <span class="step-lbl">Top Descriptors — Mean Rating (all respondents)</span>
+      <div id="results-chart-wrap">
+        <div class="no-data-msg" id="no-data-msg">Select a species and click Load Results.</div>
+        <canvas id="results-chart" style="display:none;"></canvas>
+      </div>
+    </div>
+
+    <div class="s-card" id="top5-card" style="display:none;">
+      <span class="step-lbl">Top 5 Descriptors</span>
+      <table class="table table-hover table-sm" id="top5-table">
+        <thead><tr><th>Descriptor</th><th>Category</th><th>Avg. Rating</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-wrap"></div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  "use strict";
+
+  // ============================================================
+  // CONFIGURATION
+  // ============================================================
+  var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6ww1l9hezUhygjflQlxnl2ghLQMy4iBJz9ULQtw61QFOqzcrFEEBCbOUiPxrzqr18yg/exec";
+
+  // ============================================================
+  // Data
+  // ============================================================
+  var OBJECTS = [
+    "T. grandiflorum", "T. luteum", "T. erectum", "T. sessile",
+    "T. cuneatum", "T. flexipes", "T. pusillum", "T. recurvatum",
+    "T. rugelii", "T. ovatum", "T. rivale", "other/unknown Trillium"
+  ];
+
+  var PRIMARY_COLORS = {
+    "Woody":       "#6B4226",
+    "Herbal":      "#2E7D32",
+    "Brown Spice": "#BF360C",
+    "Fruity":      "#E65100",
+    "Floral":      "#AD1457",
+    "Animal":      "#4E342E",
+    "Decay":       "#546E7A",
+    "Medicinal":   "#1565C0"
+  };
+
+  var ODOR_WHEEL = {
+    "Woody": {
+      woody_pine: "Pine", woody_smokey: "Smokey", woody_earthy: "Earthy",
+      woody_mushroom: "Mushroom", woody_waxy: "Waxy", woody_musty: "Musty",
+      woody_rubber: "Rubber", woody_woody: "Woody"
+    },
+    "Herbal": {
+      herbal_green: "Green", herbal_cucumber: "Cucumber",
+      herbal_mint: "Mint", herbal_herbal: "Herbal"
+    },
+    "Brown Spice": {
+      brown_spice_roasted: "Roasted", brown_spice_burnt: "Burnt",
+      brown_spice_grainy: "Grainy", brown_spice_brown_spice: "Brown Spice"
+    },
+    "Fruity": {
+      fruity_fruity: "Fruity", fruity_citrus: "Citrus", fruity_tropical: "Tropical",
+      fruity_berry: "Berry", fruity_peach: "Peach", fruity_cocunut: "Coconut"
+    },
+    "Floral": {
+      floral_floral: "Floral", floral_powdery: "Powdery", floral_sweet: "Sweet",
+      floral_carmellic: "Carmellic", floral_vanilla: "Vanilla"
+    },
+    "Animal": {
+      animal_animal: "Animal", animal_fishy: "Fishy", animal_meaty: "Meaty",
+      animal_fatty: "Fatty", animal_dairy: "Dairy", animal_cheesy: "Cheesy",
+      animal_buttery: "Buttery"
+    },
+    "Decay": {
+      decay_decay: "Decay", decay_yeasty: "Yeasty", decay_fecal: "Fecal",
+      decay_sulfurous: "Sulfurous", decay_alliaceous: "Alliaceous",
+      decay_alcoholic: "Alcoholic", decay_fermented: "Fermented", decay_sour: "Sour"
+    },
+    "Medicinal": {
+      medicinal_medicinal: "Medicinal", medicinal_phenolic: "Phenolic",
+      medicinal_cooling: "Cooling", medicinal_ozone: "Ozone",
+      medicinal_metallic: "Metallic", medicinal_ammonia: "Ammonia",
+      medicinal_sharp: "Sharp", medicinal_chlorine: "Chlorine",
+      medicinal_plastic: "Plastic"
+    }
+  };
+
+  // Build flat lookup: col_name -> { label, primary }
+  var TERM_LOOKUP = {};
+  var primaries = Object.keys(ODOR_WHEEL);
+  for (var pi = 0; pi < primaries.length; pi++) {
+    var prim = primaries[pi];
+    var termKeys = Object.keys(ODOR_WHEEL[prim]);
+    for (var ti = 0; ti < termKeys.length; ti++) {
+      var col = termKeys[ti];
+      TERM_LOOKUP[col] = { label: ODOR_WHEEL[prim][col], primary: prim };
+    }
+  }
+
+  // ============================================================
+  // State
+  // ============================================================
+  var selectedOdors = {};   // col -> true
+  var resultsChart  = null;
+
+  // ============================================================
+  // Init
+  // ============================================================
+  document.addEventListener("DOMContentLoaded", function () {
+    // Populate species dropdowns
+    var rateSel    = document.getElementById("species-select");
+    var resultsSel = document.getElementById("results-species");
+
+    OBJECTS.forEach(function (obj) {
+      var o1 = document.createElement("option");
+      o1.value = obj; o1.textContent = obj;
+      rateSel.appendChild(o1);
+
+      var o2 = document.createElement("option");
+      o2.value = obj; o2.textContent = obj;
+      resultsSel.appendChild(o2);
+    });
+
+    buildOdorGrid();
+  });
+
+  // ============================================================
+  // Tab switching
+  // ============================================================
+  function showTab(tab) {
+    document.getElementById("tab-rate").style.display    = (tab === "rate")    ? "" : "none";
+    document.getElementById("tab-results").style.display = (tab === "results") ? "" : "none";
+
+    var btns = document.querySelectorAll("#main-tabs .nav-link");
+    btns.forEach(function (b) { b.classList.remove("active"); });
+    var idx = (tab === "rate") ? 0 : 1;
+    btns[idx].classList.add("active");
+  }
+
+  // ============================================================
+  // Build odor grid
+  // ============================================================
+  function buildOdorGrid() {
+    var grid = document.getElementById("odor-grid");
+    if (!grid) { console.error("odor-grid element not found"); return; }
+    grid.innerHTML = "";
+
+    for (var pi = 0; pi < primaries.length; pi++) {
+      var prim  = primaries[pi];
+      var color = PRIMARY_COLORS[prim] || "#555";
+      var terms = ODOR_WHEEL[prim];
+      var cols  = Object.keys(terms);
+
+      var card = document.createElement("div");
+      card.className = "odor-cat";
+      card.style.borderTopColor = color;
+
+      var titleEl = document.createElement("div");
+      titleEl.className = "odor-cat-title";
+      titleEl.style.color = color;
+      titleEl.textContent = prim;
+      card.appendChild(titleEl);
+
+      for (var ci = 0; ci < cols.length; ci++) {
+        var colName = cols[ci];
+        var lbl = document.createElement("label");
+        var cb  = document.createElement("input");
+        cb.type  = "checkbox";
+        cb.value = colName;
+        cb.addEventListener("change", onCheckboxChange);
+
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(" " + terms[colName]));
+        card.appendChild(lbl);
+      }
+
+      grid.appendChild(card);
+    }
+  }
+
+  // ============================================================
+  // Checkbox logic
+  // ============================================================
+  function onCheckboxChange(e) {
+    var col = e.target.value;
+    if (e.target.checked) {
+      selectedOdors[col] = true;
+    } else {
+      delete selectedOdors[col];
+    }
+    updateBadges();
+    updateRatingSection();
+    updateSubmitSection();
+  }
+
+  function clearAll() {
+    var checkboxes = document.querySelectorAll('#odor-grid input[type="checkbox"]');
+    checkboxes.forEach(function (cb) { cb.checked = false; });
+    selectedOdors = {};
+    updateBadges();
+    updateRatingSection();
+    updateSubmitSection();
+  }
+
+  // ============================================================
+  // Selected badges
+  // ============================================================
+  function updateBadges() {
+    var wrap = document.getElementById("selected-badges");
+    var cols = Object.keys(selectedOdors);
+    if (cols.length === 0) {
+      wrap.innerHTML = '<span style="color:#bbb; font-style:italic; font-size:13px;">none yet</span>';
+      return;
+    }
+    var html = "";
+    cols.forEach(function (col) {
+      var lbl = TERM_LOOKUP[col] ? TERM_LOOKUP[col].label : col;
+      html += '<span class="sel-badge">' + lbl + '</span>';
+    });
+    wrap.innerHTML = html;
+  }
+
+  // ============================================================
+  // Rating section
+  // ============================================================
+  function updateRatingSection() {
+    var sec  = document.getElementById("rating-section");
+    var cols = Object.keys(selectedOdors);
+    if (cols.length === 0) { sec.innerHTML = ""; return; }
+
+    var html = '<div class="s-card"><span class="step-lbl">Step 3 \u2014 Rate each selected odor (1\u202f=\u202fFaint, 5\u202f=\u202fVery Strong)</span>';
+
+    cols.forEach(function (col) {
+      var info  = TERM_LOOKUP[col] || { label: col, primary: "Woody" };
+      var color = PRIMARY_COLORS[info.primary] || "#555";
+      html += '<div class="rate-card" style="border-left-color:' + color + ';">' +
+        '<div class="row align-items-center g-0">' +
+          '<div class="col-4 col-md-3">' +
+            '<div class="descriptor-name">' + info.label + '</div>' +
+            '<div class="category-name" style="color:' + color + ';">' + info.primary + '</div>' +
+          '</div>' +
+          '<div class="col-8 col-md-9 ps-3">' +
+            '<div class="range-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>' +
+            '<input type="range" id="rate-' + col + '" min="1" max="5" value="1" step="1" />' +
+            '<div class="range-labels"><span>Faint</span><span>Very Strong</span></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '</div>';
+    sec.innerHTML = html;
+  }
+
+  // ============================================================
+  // Submit section
+  // ============================================================
+  function updateSubmitSection() {
+    var sec  = document.getElementById("submit-section");
+    var cols = Object.keys(selectedOdors);
+    if (cols.length === 0) { sec.innerHTML = ""; return; }
+    sec.innerHTML =
+      '<div class="s-card text-center">' +
+        '<span class="step-lbl">Step 4 \u2014 Save your ratings</span>' +
+        '<button id="submit-btn" class="btn btn-success" onclick="submitForm()">' +
+          '<i class="fa-solid fa-circle-check"></i> Submit My Ratings' +
+        '</button>' +
+      '</div>';
+  }
+
+  // ============================================================
+  // GPS
+  // ============================================================
+  function captureGPS() {
+    var status = document.getElementById("gps-status");
+    if (!navigator.geolocation) {
+      status.innerHTML = '<span style="color:#c33;">Geolocation not supported. Enter coordinates manually.</span>';
+      return;
+    }
+    status.innerHTML = '<span style="color:#888;">Acquiring GPS&hellip;</span>';
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lon = pos.coords.longitude.toFixed(6);
+        document.getElementById("manual-lat").value = lat;
+        document.getElementById("manual-lon").value = lon;
+        status.innerHTML = '<span style="color:#2E7D32;">&#10003; ' + lat + ', ' + lon + '</span>';
+      },
+      function (err) {
+        status.innerHTML = '<span style="color:#c33;">GPS unavailable: ' + err.message + '. Enter coordinates manually if needed.</span>';
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  // ============================================================
+  // Submit
+  // ============================================================
+  function submitForm() {
+    var subject = document.getElementById("subject").value.trim();
+    if (!subject) { showToast("Please enter your initials first.", "warning"); return; }
+
+    var cols = Object.keys(selectedOdors);
+    if (cols.length === 0) { showToast("Please select at least one odor.", "warning"); return; }
+
+    var sample = document.getElementById("species-select").value;
+    var latVal = document.getElementById("manual-lat").value;
+    var lonVal = document.getElementById("manual-lon").value;
+
+    var payload = {
+      subject:   subject,
+      sample:    sample,
+      timestamp: new Date().toISOString(),
+      latitude:  latVal !== "" ? parseFloat(latVal) : "",
+      longitude: lonVal !== "" ? parseFloat(lonVal) : ""
+    };
+
+    // All odor columns: 0 for unselected, slider value for selected
+    var allCols = Object.keys(TERM_LOOKUP);
+    allCols.forEach(function (col) {
+      if (selectedOdors[col]) {
+        var slider = document.getElementById("rate-" + col);
+        payload[col] = slider ? parseInt(slider.value, 10) : 1;
+      } else {
+        payload[col] = 0;
+      }
+    });
+
+    var btn = document.getElementById("submit-btn");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting\u2026';
+    }
+
+    fetch(APPS_SCRIPT_URL, {
+      method:  "POST",
+      mode:    "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body:    JSON.stringify(payload)
+    })
+    .then(function () {
+      showToast("Thank you, " + subject + "! Ratings for " + sample + " saved.", "ok");
+      clearAll();
+      document.getElementById("subject").value = "";
+      document.getElementById("manual-lat").value = "";
+      document.getElementById("manual-lon").value = "";
+      document.getElementById("gps-status").textContent = "Not captured yet";
+    })
+    .catch(function () {
+      showToast("Network error. Check your connection and try again.", "error");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Submit My Ratings';
+      }
+    });
+  }
+
+  // ============================================================
+  // Results
+  // ============================================================
+  function loadResults() {
+    var species  = document.getElementById("results-species").value;
+    var msgEl    = document.getElementById("results-msg");
+    var countEl  = document.getElementById("results-count");
+    var loadBtn  = document.getElementById("load-btn");
+
+    msgEl.textContent   = "";
+    countEl.textContent = "";
+    loadBtn.disabled    = true;
+    loadBtn.innerHTML   = '<i class="fa-solid fa-spinner fa-spin"></i> Loading\u2026';
+
+    fetch(APPS_SCRIPT_URL + "?action=results")
+      .then(function (resp) { return resp.json(); })
+      .then(function (json) {
+        loadBtn.disabled  = false;
+        loadBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Load Results';
+
+        if (json.status !== "ok") {
+          msgEl.textContent = "Error: " + (json.message || "unknown");
+          return;
+        }
+
+        // Filter rows for this species (case-insensitive)
+        var target = species.toLowerCase().trim();
+        var rows = (json.data || []).filter(function (r) {
+          return String(r.sample || "").toLowerCase().trim() === target;
+        });
+
+        countEl.textContent = rows.length + " response(s) for " + species;
+
+        if (rows.length === 0) {
+          showNoData("No responses recorded for " + species + " yet.");
+          return;
+        }
+
+        // Compute mean per odor column (including zeros = not selected)
+        var allCols = Object.keys(TERM_LOOKUP);
+        var means   = {};
+        allCols.forEach(function (col) {
+          var sum = 0;
+          rows.forEach(function (r) { sum += parseFloat(r[col]) || 0; });
+          means[col] = sum / rows.length;
+        });
+
+        // Sort descending, take top 15 with mean > 0
+        var sorted = allCols
+          .filter(function (col) { return means[col] > 0; })
+          .sort(function (a, b) { return means[b] - means[a]; })
+          .slice(0, 15);
+
+        if (sorted.length === 0) {
+          showNoData("All ratings are zero for " + species + ".");
+          return;
+        }
+
+        var labels = sorted.map(function (col) { return TERM_LOOKUP[col].label; });
+        var values = sorted.map(function (col) { return parseFloat(means[col].toFixed(2)); });
+        var colors = sorted.map(function (col) { return PRIMARY_COLORS[TERM_LOOKUP[col].primary]; });
+
+        renderChart(labels, values, colors, species);
+        renderTop5Table(sorted.slice(0, 5), means);
+      })
+      .catch(function (err) {
+        loadBtn.disabled  = false;
+        loadBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Load Results';
+        msgEl.textContent = "Network error: " + err.message;
+      });
+  }
+
+  function showNoData(msg) {
+    document.getElementById("no-data-msg").textContent = msg;
+    document.getElementById("no-data-msg").style.display = "";
+    document.getElementById("results-chart").style.display = "none";
+    document.getElementById("top5-card").style.display = "none";
+    if (resultsChart) { resultsChart.destroy(); resultsChart = null; }
+  }
+
+  function renderChart(labels, values, colors, title) {
+    document.getElementById("no-data-msg").style.display = "none";
+    var canvas = document.getElementById("results-chart");
+    canvas.style.display = "";
+
+    if (resultsChart) { resultsChart.destroy(); }
+
+    resultsChart = new Chart(canvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Mean Rating",
+          data: values,
+          backgroundColor: colors.map(function (c) { return c + "CC"; }),
+          borderColor: colors,
+          borderWidth: 2,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: title + " \u2014 Odor Profile",
+            font: { size: 14, weight: "bold" },
+            color: "#1a1a1a"
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return " Mean: " + ctx.parsed.x.toFixed(2) + " / 5";
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true, max: 5,
+            title: { display: true, text: "Mean Rating (0\u2013 5)" },
+            grid: { color: "#eee" }
+          },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderTop5Table(top5cols, means) {
+    var card  = document.getElementById("top5-card");
+    var tbody = document.querySelector("#top5-table tbody");
+    tbody.innerHTML = "";
+    top5cols.forEach(function (col) {
+      var info = TERM_LOOKUP[col];
+      var tr   = document.createElement("tr");
+      tr.innerHTML =
+        "<td><strong>" + info.label + "</strong></td>" +
+        "<td><span style='color:" + PRIMARY_COLORS[info.primary] + "; font-weight:700;'>" + info.primary + "</span></td>" +
+        "<td>" + means[col].toFixed(2) + "</td>";
+      tbody.appendChild(tr);
+    });
+    card.style.display = "";
+  }
+
+  // ============================================================
+  // Toast
+  // ============================================================
+  function showToast(msg, type) {
+    var wrap = document.getElementById("toast-wrap");
+    var div  = document.createElement("div");
+    div.className   = "toast-msg toast-" + type;
+    div.textContent = msg;
+    wrap.innerHTML  = "";
+    wrap.appendChild(div);
+    setTimeout(function () { wrap.innerHTML = ""; }, type === "ok" ? 5000 : 4000);
+  }
+
+  </script>
+</body>
+</html>
